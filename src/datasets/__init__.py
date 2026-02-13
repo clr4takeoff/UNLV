@@ -1,14 +1,17 @@
-from .imagenet1k import *
-from .cifars import *
-
-from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset, DataLoader
-
-from torchvision import transforms, utils
 from copy import deepcopy
+from typing import Self
+
+from torch.utils.data import Subset, DataLoader
+from torchvision import transforms, utils
 
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+from .base import *
+from .imagenet1k import *
+from .cifar100 import *
+from .cifar10 import *
 
 
 # Image Visualizer
@@ -50,8 +53,7 @@ def dataset_split(dataset, split=0.1, new_transforms=None, random_seed=42):
 
 
 class DatasetHolder:
-    def __init__(self, config, train, test, valid=None, attack=None):
-        self.config = config
+    def __init__(self, train, test, valid=None, attack=None):
         self.train = train
         self.test = test
         self.valid = valid
@@ -63,80 +65,23 @@ class DatasetHolder:
             self.train, self.valid = dataset_split(self.train, split, self.config.resizing, random_seed)
         else:
             raise ValueError("Validation set already exists. Use a different split value.")
+        return self
 
-    def split_train_attack(self, split=0.1, random_seed=42):
+    def split_train_attack(self, split=0.1, random_seed=42) -> Self:
         if self.attack is None:
             self.train, self.attack = dataset_split(self.train, split, self.config.resizing, random_seed)
         else:
             raise ValueError("Attack set already exists. Use a different split value.")
+        return self
 
     def __repr__(self):
-        return f"{self.config.name.upper().replace('-', '')}DatasetHolder(train={len(self.train)}, test={len(self.test)}, valid={len(self.valid) if self.valid else 'None'}, attack={len(self.attack) if self.attack else 'None'})"
+        return f"DatasetHolder(train={len(self.train)}, test={len(self.test)}, valid={len(self.valid) if self.valid else 'None'}, attack={len(self.attack) if self.attack else 'None'})"
 
 
-class DatasetConfig(dict):
-    def __init__(self, name, size, norm, epoch, augmenter=None, resizer=None):
-        super().__init__()
-        self.name = name
-        self.size = size
-        self.norm = norm
-        self.epoch = epoch
-        self.augmentation = augmenter(size, norm) if augmenter else self.augmenter(size, norm)
-        self.resizing = resizer(size, norm) if resizer else self.resizer(size, norm)
-
-        self.FOR_SWIN = None
-
-    def __repr__(self):
-        return f"DatasetConfig(size={self.size}, norm={self.norm})"
-
-    @classmethod
-    def augmenter(cls, size, norm):
-        return transforms.Compose([
-            transforms.RandomResizedCrop(size),  # Resize Image
-            transforms.RandomHorizontalFlip(),
-            transforms.RandAugment(num_ops=2, magnitude=9),
-            transforms.ToTensor(),  # Convert Image to Tensor
-            transforms.Normalize(**norm)  # Normalization
-        ])
-
-    @classmethod
-    def resizer(cls, size, norm):
-        return transforms.Compose([
-            transforms.Resize(size),  # Resize Image
-            transforms.ToTensor(),  # Convert Image to Tensor
-            transforms.Normalize(**norm)  # Normalization
-        ])
-
-    @classmethod
-    def centered_resizer(cls, size1, size2, norm):
-        return transforms.Compose([
-            transforms.Resize(size1),  # Resize Image
-            transforms.CenterCrop(size2),  # Center Crop Image
-            transforms.ToTensor(),  # Convert Image to Tensor
-            transforms.Normalize(**norm)  # Normalization
-        ])
-
-
-CIFAR10Config = DatasetConfig(
-    name=CIFAR10.dataset_name,
-    size=32,
-    norm=dict(mean=(0.4914, 0.4822, 0.4465), std=(0.2470, 0.2435, 0.2616)),
-    epoch=200
-)
-CIFAR10Config.FOR_SWIN = DatasetConfig(CIFAR10Config.name, 224, CIFAR10Config.norm, CIFAR10Config.epoch)
-
-CIFAR100Config = DatasetConfig(
-    name=CIFAR100.dataset_name,
-    size=32,
-    norm=dict(mean=(0.5071, 0.4865, 0.4409), std=(0.2673, 0.2564, 0.2762)),
-    epoch=1000
-)
-CIFAR100Config.FOR_SWIN = DatasetConfig(CIFAR100Config.name, 224, CIFAR100Config.norm, CIFAR100Config.epoch)
-
-IMAGENET1KConfig = DatasetConfig(
-    name=ImageNet1K.dataset_name,
-    size=224,
-    norm=dict(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-    resizer=lambda s, n: DatasetConfig.centered_resizer(256, s, n),
-    epoch=1000
-)
+def build_augmentation(img_size, num_ops=2, magnitude=9):
+    return transforms.Compose([
+        transforms.RandomResizedCrop(img_size),  # Resize Image
+        transforms.RandomHorizontalFlip(),
+        transforms.RandAugment(num_ops=num_ops, magnitude=magnitude),
+        transforms.ToTensor(),  # Convert Image to Tensor
+    ])

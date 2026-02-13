@@ -22,6 +22,11 @@ class ImageNet1K(datasets.ImageFolder):
     dataset_id = "ILSVRC/imagenet-1k"
     obj_classes = tuple(IMAGENET2012_CLASSES.keys())
     obj_class_namees = tuple(IMAGENET2012_CLASSES.values())
+    num_classes = len(obj_classes)
+
+    img_size = 224
+    img_mean = (0.485, 0.456, 0.406)
+    img_std = (0.229, 0.224, 0.225)
 
     filenames = {
         "train": [f"train_images_{i}.tar.gz" for i in range(5)],
@@ -30,13 +35,13 @@ class ImageNet1K(datasets.ImageFolder):
     }
 
     def __init__(
-            self,
-            root: str,
-            force_download: bool = True,
-            train: bool = True,
-            valid: bool = False,
-            transform: Optional[Callable] = None,
-            target_transform: Optional[Callable] = None
+        self,
+        root: str,
+        force_download: bool = True,
+        train: bool = True,
+        valid: bool = False,
+        transform: Optional[Callable] = None,
+        target_transform: Optional[Callable] = None
     ):
         self.root = path.join(root, self.dataset_name)
 
