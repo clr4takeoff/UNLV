@@ -23,7 +23,7 @@ class BaseModel(PreTrainedModel):
 
     def save_pretrained(
         self,
-        save_directory: str | os.PathLike,
+        save_directory: str | os.PathLike = "",
         is_main_process: bool = True,
         state_dict: dict | None = None,
         push_to_hub: bool = False,
