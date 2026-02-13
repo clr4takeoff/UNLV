@@ -1,5 +1,5 @@
 [project]
-name = "rogia"
+name = "reo-gia"
 version = "0.1.0"
 description = "Robust Vision Transformer Against Gradient Inversion Attacks"
 readme = "README.md"
