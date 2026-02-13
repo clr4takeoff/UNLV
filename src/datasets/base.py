@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset
+from torchvision import transforms
 
 
 class BaseDataset(Dataset):
@@ -12,3 +13,12 @@ class BaseDataset(Dataset):
         super().__init__(*args, **kwargs)
         if self.transform is None:
             self.transform = transforms.ToTensor()
+
+    @property
+    def config(self) -> dict:
+        return dict(
+            size=self.img_size,
+            do_resize=True,
+            image_mean=self.image_mean,
+            image_std=self.image_std
+        )
